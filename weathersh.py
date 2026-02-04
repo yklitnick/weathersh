@@ -64,19 +64,18 @@ def main():
         return
 
     if args.set_default:
-        # We will geocode and save coordinates + name
+        print(f"Looking up '{args.set_default}'...", end="", flush=True)
         try:
             result = geocode_city(args.set_default)
+            print("\r" + " " * 80 + "\r", end="", flush=True)  # clear line
             if not result:
-                print(
-                    f"Error: Could not find location '{args.set_default}'",
-                    file=sys.stderr,
-                )
+                print(f"Could not find location: {args.set_default}", file=sys.stderr)
                 return
             save_default_location(result)
             print(f"Default location set to: {result['display_name']}")
         except Exception as e:
-            print(f"Error setting default: {e}", file=sys.stderr)
+            print("\r" + " " * 80 + "\r", end="", flush=True)
+            print(f"Failed to set default location: {e}", file=sys.stderr)
         return
 
     # Determine which location to use
@@ -88,21 +87,36 @@ def main():
         default = load_default_location()
         if default:
             city_input = default["display_name"]
-            print(f"Using saved location: {city_input}")
+            print(f"Using saved default: {city_input}")
         else:
-            print("No location provided and no default set.", file=sys.stderr)
-            print("Run with a city name or use --set-default CITY", file=sys.stderr)
+            print("No location given and no default is set.", file=sys.stderr)
+            print("Use:  weathersh <city>   or   weathersh --set-default <city>")
             return
+
+    print(f"Fetching weather for {city_input}...", end="", flush=True)
 
     # Get coordinates
     try:
         geo = geocode_city(city_input)
         if not geo:
-            print(f"Could not find location: {city_input}", file=sys.stderr)
+            print("\r" + " " * 80 + "\r", end="", flush=True)
+            print(f"Location not found: {city_input}", file=sys.stderr)
             return
+
+        weather = get_current_weather(geo["lat"], geo["lon"], unit=args.unit)
+
+        # Clear loading message
+        print("\r" + " " * 80 + "\r", end="", flush=True)
+
+        print_current_weather(weather, geo, args.unit)
+
+    except KeyboardInterrupt:
+        print("\rCancelled.", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
-        print(f"Geocoding error: {e}", file=sys.stderr)
-        return
+        print("\r" + " " * 80 + "\r", end="", flush=True)
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     # Fetch weather
     try:
