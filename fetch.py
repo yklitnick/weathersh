@@ -89,7 +89,7 @@ def get_weather_data(lat: float, lon: float, unit: str = "c") -> dict:
         ),
         # Hourly (next 24 hours)
         "hourly": (
-            "time,temperature_2m,weather_code,precipitation_probability,precipitation"
+            "temperature_2m,weather_code,precipitation_probability,precipitation"
         ),
         "temperature_unit": temperature_unit,
         "wind_speed_unit": "kmh",

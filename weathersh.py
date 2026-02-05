@@ -150,15 +150,7 @@ def main():
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Fetch weather
-    try:
-        weather_data = get_weather_data(geo["lat"], geo["lon"], unit=args.unit)
-    except Exception as e:
-        print(f"Error fetching weather: {e}", file=sys.stderr)
-        return
 
-    # Show result
-    print_current_weather(weather_data, geo, args.unit)
 
 
 if __name__ == "__main__":

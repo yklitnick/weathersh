@@ -67,11 +67,11 @@ def format_wind_direction(degrees: float) -> str:
 
 
 def print_current_weather(weather: Dict, geo: Dict, unit: str) -> None:
-    temp_unit = "°C" if unit == "c" else "°F"
-    temp = weather["temperature"]
-    feels_like = weather["feels_like"]
-    wind_speed = weather["wind_speed"]
-    wind_dir = format_wind_direction(weather["wind_direction"])
+    temp_unit = "C" if unit == "c" else "F"
+    temp = weather["temperature_2m"]
+    feels_like = weather["apparent_temperature"]
+    wind_speed = weather["wind_speed_10m"]
+    wind_dir = format_wind_direction(weather["wind_direction_10m"])
     desc = get_weather_description(weather["weather_code"])
 
     # Try to make time human-friendly
@@ -82,12 +82,12 @@ def print_current_weather(weather: Dict, geo: Dict, unit: str) -> None:
         time_str = weather["time"]
 
     print(f"{geo['display_name']:<30} {time_str}")
-    print("─" * 45)
+    print("-" * 45)
 
     print(f"Weather      {desc}")
     print(f"Temperature  {temp:.1f} {temp_unit}")
     print(f"Feels like   {feels_like:.1f} {temp_unit}")
-    print(f"Humidity     {weather['humidity']}%")
+    print(f"Humidity     {weather['relative_humidity_2m']}%")
     print(f"Wind         {wind_speed:.0f} km/h {wind_dir}")
 
     print()
@@ -97,11 +97,11 @@ def print_current_weather(weather: Dict, geo: Dict, unit: str) -> None:
 
 def print_current_daily_forecast(data: dict, geo: dict):
     daily = data["daily"]
-    unit_symbol = "°C" if data["unit"] == "c" else "°F"
+    unit_symbol = "C" if data["unit"] == "c" else "F"
 
     print(f"{geo['display_name']}")
     print("Daily forecast")
-    print("─" * 45)
+    print("-" * 45)
 
     # Today + next 6 days (or however many we got)
     for i in range(len(daily["time"])):
@@ -119,7 +119,7 @@ def print_current_daily_forecast(data: dict, geo: dict):
         t_min = daily["temperature_2m_min"][i]
         precip_prob = daily["precipitation_probability_max"][i]
 
-        print(f"{day_name:>12}  {t_min:3.0f} – {t_max:3.0f}{unit_symbol}   {desc}")
+        print(f"{day_name:>12}  {t_min:3.0f} - {t_max:3.0f}{unit_symbol}   {desc}")
         if precip_prob > 0:
             print(f"{' ':>12}  precip: {precip_prob}%")
         print()
@@ -127,12 +127,16 @@ def print_current_daily_forecast(data: dict, geo: dict):
 
 def print_hourly_forecast(data: dict, geo: dict):
     hourly = data["hourly"]
-    unit_symbol = "°C" if data["unit"] == "c" else "°F"
+    unit_symbol = "C" if data["unit"] == "c" else "F"
 
-    print(f"{geo['display_name']} – next hours")
-    print("─" * 45)
+    print(f"{geo['display_name']} - next hours")
+    print("-" * 45)
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    # Use 'current' time from API as reference to avoid timezone mismatch
+    try:
+        now = datetime.datetime.fromisoformat(data["current"]["time"].replace("Z", "+00:00"))
+    except:
+        now = datetime.datetime.now()
     shown = 0
     max_hours = 24
 
