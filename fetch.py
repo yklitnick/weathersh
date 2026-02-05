@@ -59,21 +59,46 @@ def geocode_city(name: str) -> Optional[Dict]:
     }
 
 
-def get_current_weather(lat: float, lon: float, unit: str = "c") -> dict:
+def get_weather_data(lat: float, lon: float, unit: str = "c") -> dict:
     """
-    Get current weather conditions
+    Fetch current + daily + hourly weather data from Open-Meteo
     """
     temperature_unit = "celsius" if unit == "c" else "fahrenheit"
 
     params = {
-        "latitude": str(lat),
-        "longitude": str(lon),
-        "current": "temperature_2m,apparent_temperature,relative_humidity_2m,"
-        "weather_code,wind_speed_10m,wind_direction_10m",
+        # Current
+        "current": (
+            "temperature_2m,"
+            "apparent_temperature,"
+            "relative_humidity_2m,"
+            "weather_code,"
+            "wind_speed_10m,"
+            "wind_direction_10m,"
+            "precipitation_probability"
+        ),
+        # Daily forecast
+        "daily": (
+            "weather_code,"
+            "temperature_2m_max,"
+            "temperature_2m_min,"
+            "apparent_temperature_max,"
+            "apparent_temperature_min,"
+            "precipitation_sum,"
+            "precipitation_probability_max,"
+            "wind_speed_10m_max"
+        ),
+        # Hourly (next 24 hours)
+        "hourly": (
+            "time,temperature_2m,weather_code,precipitation_probability,precipitation"
+        ),
         "temperature_unit": temperature_unit,
         "wind_speed_unit": "kmh",
+        "precipitation_unit": "mm",
         "timezone": "auto",
-        "forecast_days": 1,  # we only need today
+        "forecast_days": 7,  # up to 7 days
+        "forecast_hours": 24,  # next 24 hours
+        "latitude": str(lat),
+        "longitude": str(lon),
     }
 
     query = urllib.parse.urlencode(params)
@@ -81,17 +106,13 @@ def get_current_weather(lat: float, lon: float, unit: str = "c") -> dict:
 
     data = fetch_json(url)
 
-    current = data.get("current", {})
-    if not current:
-        raise ValueError("No current weather data in response")
+    # Basic validation
+    if "current" not in data or "daily" not in data or "hourly" not in data:
+        raise ValueError("Incomplete weather data received")
 
     return {
-        "temperature": current.get("temperature_2m"),
-        "feels_like": current.get("apparent_temperature"),
-        "humidity": current.get("relative_humidity_2m"),
-        "wind_speed": current.get("wind_speed_10m"),
-        "wind_direction": current.get("wind_direction_10m"),
-        "weather_code": current.get("weather_code"),
-        "time": current.get("time"),  # ISO time string
+        "current": data["current"],
+        "daily": data["daily"],
+        "hourly": data["hourly"],
         "unit": unit,
     }

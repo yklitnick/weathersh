@@ -93,3 +93,71 @@ def print_current_weather(weather: Dict, geo: Dict, unit: str) -> None:
     print()
     print("Updated      just now")
     print()
+
+
+def print_current_daily_forecast(data: dict, geo: dict):
+    daily = data["daily"]
+    unit_symbol = "°C" if data["unit"] == "c" else "°F"
+
+    print(f"{geo['display_name']}")
+    print("Daily forecast")
+    print("─" * 45)
+
+    # Today + next 6 days (or however many we got)
+    for i in range(len(daily["time"])):
+        date_str = daily["time"][i]
+        try:
+            dt = datetime.datetime.fromisoformat(date_str)
+            day_name = dt.strftime("%a %d %b")
+        except:
+            day_name = date_str
+
+        wmo_code = daily["weather_code"][i]
+        desc = get_weather_description(wmo_code)
+
+        t_max = daily["temperature_2m_max"][i]
+        t_min = daily["temperature_2m_min"][i]
+        precip_prob = daily["precipitation_probability_max"][i]
+
+        print(f"{day_name:>12}  {t_min:3.0f} – {t_max:3.0f}{unit_symbol}   {desc}")
+        if precip_prob > 0:
+            print(f"{' ':>12}  precip: {precip_prob}%")
+        print()
+
+
+def print_hourly_forecast(data: dict, geo: dict):
+    hourly = data["hourly"]
+    unit_symbol = "°C" if data["unit"] == "c" else "°F"
+
+    print(f"{geo['display_name']} – next hours")
+    print("─" * 45)
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    shown = 0
+    max_hours = 24
+
+    for i, time_str in enumerate(hourly["time"]):
+        dt = datetime.datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+        if dt < now:
+            continue  # skip past hours
+
+        hour_label = dt.strftime("%H:%M")
+        temp = hourly["temperature_2m"][i]
+        wmo_code = hourly["weather_code"][i]
+        precip_prob = hourly["precipitation_probability"][i]
+
+        desc = get_weather_description(wmo_code)
+
+        line = f"{hour_label}  {temp:4.1f}{unit_symbol}  {desc}"
+        if precip_prob > 15:
+            line += f"  ({precip_prob}% precip)"
+
+        print(line)
+
+        shown += 1
+        if shown >= max_hours:
+            break
+
+    if shown == 0:
+        print("No future hourly data available.")
+    print()

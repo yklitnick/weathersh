@@ -64,6 +64,13 @@ weathersh
 # Clear default
 weathersh --clear-default
 
+# See daily and hourly forecast
+weathersh Paris
+weathersh Paris --daily
+weathersh Paris --hourly
+weathersh --daily   # using default location
+weathersh Berlin --unit f --daily
+
 # Help
 weathersh --help
 ```

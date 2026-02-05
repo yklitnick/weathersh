@@ -7,9 +7,13 @@ import sys
 import argparse
 from pathlib import Path
 
-from fetch import get_current_weather, geocode_city
+from fetch import get_weather_data, geocode_city
 from storage import load_default_location, save_default_location, clear_default_location
-from output import print_current_weather
+from output import (
+    print_current_weather,
+    print_current_daily_forecast,
+    print_hourly_forecast,
+)
 
 
 def main():
@@ -53,6 +57,20 @@ def main():
         "--version",
         action="version",
         version="weathersh 0.1.0",
+    )
+
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument(
+        "--daily",
+        action="store_true",
+        help="Show daily forecast (today + next days)",
+    )
+
+    group.add_argument(
+        "--hourly",
+        action="store_true",
+        help="Show hourly forecast for next 12–24 hours",
     )
 
     args = parser.parse_args()
@@ -115,13 +133,14 @@ def main():
             print("\r" + " " * 80 + "\r", end="", flush=True)
             print(f"Location not found: {city_input}", file=sys.stderr)
             return
-
-        weather = get_current_weather(geo["lat"], geo["lon"], unit=args.unit)
-
-        # Clear loading message
+        weather_data = get_weather_data(geo["lat"], geo["lon"], unit=args.unit)
         print("\r" + " " * 80 + "\r", end="", flush=True)
-
-        print_current_weather(weather, geo, args.unit)
+        if args.daily:
+            print_current_daily_forecast(weather_data, geo)
+        elif args.hourly:
+            print_hourly_forecast(weather_data, geo)
+        else:
+            print_current_weather(weather_data["current"], geo, args.unit)
 
     except KeyboardInterrupt:
         print("\rCancelled.", file=sys.stderr)
@@ -133,13 +152,13 @@ def main():
 
     # Fetch weather
     try:
-        weather = get_current_weather(geo["lat"], geo["lon"], unit=args.unit)
+        weather_data = get_weather_data(geo["lat"], geo["lon"], unit=args.unit)
     except Exception as e:
         print(f"Error fetching weather: {e}", file=sys.stderr)
         return
 
     # Show result
-    print_current_weather(weather, geo, args.unit)
+    print_current_weather(weather_data, geo, args.unit)
 
 
 if __name__ == "__main__":
