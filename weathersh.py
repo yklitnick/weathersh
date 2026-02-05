@@ -82,12 +82,25 @@ def main():
     city_input = None
 
     if args.location:
-        city_input = args.location
+        city_input = args.location.strip()
     else:
         default = load_default_location()
         if default:
-            city_input = default["display_name"]
-            print(f"Using saved default: {city_input}")
+            # Use the saved name, but try to clean it for better geocoding success
+            saved_name = default["display_name"]
+            # Remove ", XX" or " XX" at the end if present
+            if "," in saved_name:
+                city_input = saved_name.split(",", 1)[0].strip()
+            elif " " in saved_name:
+                parts = saved_name.rsplit(" ", 1)
+                if len(parts[1]) <= 3:  # likely country code
+                    city_input = parts[0].strip()
+                else:
+                    city_input = saved_name
+            else:
+                city_input = saved_name
+
+            print(f"Using saved default: {saved_name}")
         else:
             print("No location given and no default is set.", file=sys.stderr)
             print("Use:  weathersh <city>   or   weathersh --set-default <city>")
