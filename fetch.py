@@ -4,6 +4,7 @@ Network and Open-Meteo API interaction
 
 import json
 import sys
+import asyncio
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -14,7 +15,7 @@ GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 
-def fetch_json(url: str) -> dict:
+def _fetch_json_sync(url: str) -> dict:
     """Fetch JSON from URL with timeout and basic error handling"""
     req = urllib.request.Request(
         url, headers={"User-Agent": "weathersh/0.1 (CLI tool)"}
@@ -35,7 +36,13 @@ def fetch_json(url: str) -> dict:
         raise RuntimeError(f"Unexpected error: {e}")
 
 
-def geocode_city(name: str) -> Optional[Dict]:
+async def fetch_json(url: str) -> dict:
+    """Fetch JSON from URL with timeout and basic error handling (async)"""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _fetch_json_sync, url)
+
+
+async def geocode_city(name: str) -> Optional[Dict]:
     """
     Search for city and return best match with lat/lon and display name
     Returns None if nothing useful found
@@ -44,7 +51,7 @@ def geocode_city(name: str) -> Optional[Dict]:
     query = urllib.parse.urlencode(params)
     url = f"{GEOCODING_URL}?{query}"
 
-    data = fetch_json(url)
+    data = await fetch_json(url)
 
     results = data.get("results", [])
     if not results:
@@ -59,7 +66,7 @@ def geocode_city(name: str) -> Optional[Dict]:
     }
 
 
-def get_weather_data(lat: float, lon: float, unit: str = "c") -> dict:
+async def get_weather_data(lat: float, lon: float, unit: str = "c") -> dict:
     """
     Fetch current + daily + hourly weather data from Open-Meteo
     """
@@ -104,7 +111,7 @@ def get_weather_data(lat: float, lon: float, unit: str = "c") -> dict:
     query = urllib.parse.urlencode(params)
     url = f"{FORECAST_URL}?{query}"
 
-    data = fetch_json(url)
+    data = await fetch_json(url)
 
     # Basic validation
     if "current" not in data or "daily" not in data or "hourly" not in data:

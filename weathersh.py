@@ -3,6 +3,7 @@
 weathersh - minimal terminal weather using Open-Meteo (stdlib only)
 """
 
+import asyncio
 import sys
 import argparse
 from pathlib import Path
@@ -16,7 +17,7 @@ from output import (
 )
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(
         description="Minimal CLI weather using Open-Meteo",
         epilog="Examples:\n"
@@ -84,7 +85,7 @@ def main():
     if args.set_default:
         print(f"Looking up '{args.set_default}'...", end="", flush=True)
         try:
-            result = geocode_city(args.set_default)
+            result = await geocode_city(args.set_default)
             print("\r" + " " * 80 + "\r", end="", flush=True)  # clear line
             if not result:
                 print(f"Could not find location: {args.set_default}", file=sys.stderr)
@@ -128,12 +129,12 @@ def main():
 
     # Get coordinates
     try:
-        geo = geocode_city(city_input)
+        geo = await geocode_city(city_input)
         if not geo:
             print("\r" + " " * 80 + "\r", end="", flush=True)
             print(f"Location not found: {city_input}", file=sys.stderr)
             return
-        weather_data = get_weather_data(geo["lat"], geo["lon"], unit=args.unit)
+        weather_data = await get_weather_data(geo["lat"], geo["lon"], unit=args.unit)
         print("\r" + " " * 80 + "\r", end="", flush=True)
         if args.daily:
             print_current_daily_forecast(weather_data, geo)
@@ -155,7 +156,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except KeyboardInterrupt:
         print("\nCancelled.", file=sys.stderr)
         sys.exit(1)
