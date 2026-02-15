@@ -17,7 +17,7 @@ from output import (
 )
 
 
-async def main():
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Minimal CLI weather using Open-Meteo",
         epilog="Examples:\n"
@@ -74,7 +74,11 @@ async def main():
         help="Show hourly forecast for next 12–24 hours",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+async def main():
+    args = parse_arguments()
 
     # Handle special modes first
     if args.clear_default:
